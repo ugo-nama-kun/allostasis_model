@@ -47,9 +47,9 @@ class AllostaticEnv(gym.Env):
         self.capacitance = 30
         self.resistance = 10
         
-        self.drive_coef_temp = 10.
-        self.drive_coef_cue = 0.1
-        self.action_cost = 0.0
+        self.drive_coef_temp = 100.
+        self.drive_coef_cue = 0.3
+        self.action_cost = 0.05
         
     def set_cue_probs(self, p_on, p_off):
         self.prob_cue_on = p_on
@@ -61,7 +61,16 @@ class AllostaticEnv(gym.Env):
     def reset(self, *, seed, options):
         super().reset(seed=seed, options=options)
         self.steps = 0
-        self.temp = 273. + TEMP_SETPOINT + np.random.randn()
+        
+        from_setpoint = None
+        if options is not None:
+            from_setpoint = options.get("from_setpoint")
+        
+        if from_setpoint is True:
+            self.temp = 273. + TEMP_SETPOINT
+        else:
+            self.temp = 273. + TEMP_SETPOINT + np.random.randn()
+
         self.temp_prev = 273 + TEMP_SETPOINT
         self.cue = False
         self.cue_prev = False

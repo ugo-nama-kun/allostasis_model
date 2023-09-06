@@ -36,11 +36,8 @@ from ppo_small import Agent
 
 env_ = gym.vector.SyncVectorEnv([make_env])
 
-env = AllostaticEnv()
-
-init_temp = np.array([40] * 8) + 3 * np.random.rand(8)
-init_temp[2] = 50
-options = {"initial_temp": init_temp}
+env = make_env()
+options = {"from_setpoint": True}
 
 env = gym.wrappers.ClipAction(env)
 env = gym.wrappers.RescaleAction(env, 0, 1)  # for Beta policy
@@ -55,18 +52,25 @@ if "saved_models" in FILE:
 else:
     agent.load_state_dict(torch.load("saved_models/" + FILE, map_location=torch.device('cpu')))
 
-agent.eval()
-
-N = 2000
+N = 1500
 cue_hist = deque(maxlen=N)
 temp_hist = deque(maxlen=N)
 action_hist = deque(maxlen=N)
 global_step = 0
 next_obs, info = env.reset(options=options)
 next_obs = torch.Tensor(next_obs[None]).to(device)
+
+cue = 0.0
 done = False
 while not done:
-    
+
+    # if global_step == 300:
+    #     cue = 1.0
+    # if global_step == 600:
+    #     cue = 0.0
+    #
+    # next_obs[0][1] = cue
+
     # ALGO LOGIC: action logic
     with torch.no_grad():
         action, _, _, value = agent.get_action_and_value(next_obs)
@@ -77,6 +81,7 @@ while not done:
     next_obs, reward, done, truncated, info = env.step(action_)
     
     cue_hist.append(next_obs[1])
+    # cue_hist.append(cue)
     temp_hist.append(next_obs[0])
     action_hist.append(action_[0])
 
@@ -94,6 +99,8 @@ cue_hist = np.array(cue_hist)
 temp_hist = np.array(temp_hist)
 
 pseudo_setpoint = env.get_pseudo_setpoint(action_hist)
+width = 100
+# pseudo_setpoint = np.convolve(pseudo_setpoint, np.ones(width), "valid") / width
 
 np.save("sample_data/action_hist", action_hist)
 np.save("sample_data/cue_hist", cue_hist)
@@ -107,7 +114,8 @@ plt.plot(temp_hist)
 plt.plot(np.ones_like(temp_hist) * temp_scale(TEMP_SETPOINT + 273), "--")
 plt.plot(np.ones_like(temp_hist) * temp_scale(TEMP_CUE_OFF + 273), "--")
 plt.plot(action_hist, alpha=0.3)
-# plt.plot(pseudo_setpoint, alpha=0.3)
+# plt.plot(pseudo_setpoint, "k", alpha=0.5)
+plt.ylim([-0.3, 1.3])
 plt.ylabel("Normalized Obs")
 plt.xlabel("Step")
 plt.legend(["cue", "temp", "setpoint", "cue_off", "action"])#, "pseudo_setpoint"])
