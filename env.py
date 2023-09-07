@@ -56,8 +56,8 @@ class AllostaticEnv(gym.Env):
         self.prob_cue_off = p_off
         
     def get_pseudo_setpoint(self, action):
-        return temp_scale(self.temp_background + self.resistance * self.k_heat_gen * action)
-        
+        return self.temp_background + self.resistance * self.k_heat_gen * action
+ 
     def reset(self, *, seed, options):
         super().reset(seed=seed, options=options)
         self.steps = 0
