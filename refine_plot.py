@@ -2,6 +2,7 @@ import json
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+from env import TEMP_SETPOINT
 
 sns.set()
 sns.set_context("paper")
@@ -18,7 +19,8 @@ plt.figure(figsize=(8, 4), dpi=100)
 
 plt.subplot(3, 1, 1)
 plt.plot(data["temp"][x_range[0]:x_range[1]], alpha=0.5)
-plt.legend(["temp"])
+plt.plot(np.arange(x_range[1]- x_range[0]), TEMP_SETPOINT * np.ones_like(data["temp"][x_range[0]:x_range[1]]), "--k", alpha=0.5)
+plt.legend(["temperature"])
 
 plt.subplot(3, 1, 2)
 plt.plot(data["cue"][x_range[0]:x_range[1]], "r", alpha=1)
