@@ -122,9 +122,6 @@ class Agent(nn.Module):
             layer_init(nn.Linear(np.array(envs.single_observation_space.shape).prod(), 20)),
             nn.LayerNorm(20),
             NewGELU(),
-            # nn.Linear(np.array(envs.single_observation_space.shape).prod(), 40),
-            # nn.LayerNorm(40),
-            # NewGELU(),
             layer_init(nn.Linear(20, 1), std=1.0),
         )
 
@@ -132,9 +129,6 @@ class Agent(nn.Module):
             layer_init(nn.Linear(np.array(envs.single_observation_space.shape).prod(), 20)),
             nn.LayerNorm(20),
             NewGELU(),
-            # nn.Linear(np.array(envs.single_observation_space.shape).prod(), 40),
-            # nn.LayerNorm(40),
-            # NewGELU(),
             BetaHead(20, np.prod(envs.single_action_space.shape)),
         )
 
