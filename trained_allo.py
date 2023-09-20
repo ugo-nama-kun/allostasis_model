@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import torch
 
-from env import SickEnv, TEMP_CUE_OFF, temp_scale, TEMP_SETPOINT
+from env import temp_scale, TEMP_SETPOINT, AllostaticEnv
 
 FILE = sys.argv[1]
 
@@ -29,7 +29,7 @@ if not CUDA:
     
     
 def make_env():
-    item = SickEnv()
+    item = AllostaticEnv()
     return item
 
 from ppo_small import Agent
@@ -42,7 +42,7 @@ options = {"from_setpoint": True}
 env = gym.wrappers.ClipAction(env)
 env = gym.wrappers.RescaleAction(env, 0, 1)  # for Beta policy
 
-env.set_cue_probs(p_on=0.001, p_off=0.01)
+env.set_cue_probs(p_on=0.005)
 
 print(env.observation_space)
 
@@ -53,24 +53,20 @@ else:
     agent.load_state_dict(torch.load("saved_models/" + FILE, map_location=torch.device('cpu')))
 
 TEST_CUE = True
-N = 1500
-cue_hist = deque(maxlen=N)
-temp_hist = deque(maxlen=N)
-action_hist = deque(maxlen=N)
+N = 500
+
+hist_state = deque()
+hist_cue = deque()
+hist_action = deque()
+hist_load = deque()
+hist_memory = deque()
+
 global_step = 0
 next_obs, info = env.reset(options=options)
 next_obs = torch.Tensor(next_obs[None]).to(device)
 
-cue = 0.0
 done = False
 while not done:
-
-    if TEST_CUE:
-        if global_step == 300:
-            cue = 1.0
-        if global_step == 600:
-            cue = 0.0
-        next_obs[0][1] = cue
 
     # ALGO LOGIC: action logic
     with torch.no_grad():
@@ -78,13 +74,15 @@ while not done:
     
     # TRY NOT TO MODIFY: execute the game and log data.
     action_ = action.cpu().numpy()[0]
-
-    cue_hist.append(next_obs[0][1])
-    temp_hist.append(next_obs[0][0])
-    action_hist.append(action_[0])
-
+    
     next_obs, reward, done, truncated, info = env.step(action_)
     
+    hist_state.append(info["temp_c"])
+    hist_cue.append(info["cue"])
+    hist_action.append(info["q_control"])
+    hist_load.append(info["load"])
+    hist_memory.append(info["memory"])
+
     done = done | truncated
     next_obs = torch.Tensor(next_obs[None]).to(device)
     global_step += 1
@@ -94,34 +92,22 @@ while not done:
     
 env.close()
 
-action_hist = np.array(action_hist)
-cue_hist = np.array(cue_hist)
-temp_hist = np.array(temp_hist)
-
-ps_ = env.get_pseudo_setpoint(action_hist)
-pseudo_setpoint = np.zeros_like(ps_)
-pseudo_setpoint[0] = ps_[0]
-for i in range(1, ps_.size):
-    pseudo_setpoint[i] = pseudo_setpoint[i - 1] - 0.1 * (pseudo_setpoint[i - 1] - ps_[i])
-pseudo_setpoint = temp_scale(pseudo_setpoint)
-
-np.save("sample_data/action_hist", action_hist)
-np.save("sample_data/cue_hist", cue_hist)
-np.save("sample_data/temp_hist", temp_hist)
-np.save("sample_data/pseudo_setpoint", pseudo_setpoint)
-
 plt.figure()
-plt.clf()
-plt.plot(cue_hist)
-plt.plot(temp_hist)
-plt.plot(np.ones_like(temp_hist) * temp_scale(TEMP_SETPOINT + 273), "--")
-plt.plot(np.ones_like(temp_hist) * temp_scale(TEMP_CUE_OFF + 273), "--")
-plt.plot(action_hist, alpha=0.3)
-plt.plot(pseudo_setpoint, "k", alpha=0.5)
-plt.ylim([-1.0, 1.3])
-plt.ylabel("Normalized Obs")
-plt.xlabel("Step")
-plt.legend(["cue", "temp", "setpoint", "cue_off", "action", "pseudo_setpoint"])
+hists = [hist_state, hist_cue, hist_action, hist_load, hist_memory]
+legends = ["temp", "cue", "control", "load", "memory"]
+
+# save data as json
+import json
+data = {k: list(v) for k, v in zip(legends, hists)}
+with open("sample_data/allostasis.json", mode="w") as f:
+    json.dump(data, f)
+
+for i, hist in enumerate(hists):
+    plt.subplot(len(legends), 1, i + 1)
+    plt.plot(hist, alpha=0.5)
+    plt.legend([legends[i]])
+
+plt.tight_layout()
 plt.show()
 
 print(f"{FILE} finish. @ {global_step} steps")
