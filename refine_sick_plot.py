@@ -12,7 +12,7 @@ with open("sample_data/allostasis_sick.json", mode="r") as f:
     
 legends = ["temp", "cue", "control", "memory"]
 
-x_range = [150, 325]
+x_range = [225, 400]
 # x_range = [0, len(data["temp"])]
 
 plt.figure(figsize=(8, 4), dpi=100)
