@@ -45,7 +45,7 @@ options = {"from_setpoint": True}
 env = gym.wrappers.ClipAction(env)
 env = gym.wrappers.RescaleAction(env, 0, 1)  # for Beta policy
 
-env.set_cue_probs(p_on=0.005, p_off=0.05)
+env.set_cue_probs(p_on=0.005, p_off=0.01)
 
 print(env.observation_space)
 

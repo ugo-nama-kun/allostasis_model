@@ -202,7 +202,7 @@ class SickEnv(gym.Env):
         
         self.drive_coef_temp = 100.
         self.drive_coef_cue = 1.
-        self.action_cost = 0.05
+        self.action_cost = 0.2
     
     def set_cue_probs(self, p_on, p_off):
         self.prob_cue_on = p_on
