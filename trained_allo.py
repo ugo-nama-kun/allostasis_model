@@ -32,7 +32,7 @@ def make_env():
     item = AllostaticEnv()
     return item
 
-from ppo_small import Agent
+from ppo_small_allo import Agent
 
 env_ = gym.vector.SyncVectorEnv([make_env])
 
