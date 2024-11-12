@@ -20,9 +20,10 @@ def temp_scale(temp):
 
 
 class AllostaticEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, no_load=False):
         super().__init__()
-        
+        self.no_load = no_load  # Test condition. no load after the cue presentation
+
         self.action_space = Box(low=0, high=1, shape=(1,))
         self.observation_space = Box(low=0, high=1, shape=(2,))
         
@@ -126,7 +127,7 @@ class AllostaticEnv(gym.Env):
         q_load = 0.0
         if self.count_after_cue_presentation is not None:
             if load_start <= self.count_after_cue_presentation < load_end:
-                q_load = self.thermal_load
+                q_load = self.thermal_load if self.no_load is False else 0.0
         
             if load_end <= self.count_after_cue_presentation:
                 self.count_after_cue_presentation = None
